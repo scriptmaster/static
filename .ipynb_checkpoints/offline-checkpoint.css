@@ -206,8 +206,9 @@ legend { cursor: move; }
 
 .prompt {
 	color: var(--main-color);
-	background-color: rgba(70,70,140, 1);
+	background-color: #22aa;
     box-shadow: 0px 1px 3px 6px #0004;
+    position: absolute;
 }
 
 button {
@@ -230,12 +231,9 @@ label.file {
     position: relative;
     /* min-height: 14px; */
     display: flex;
+    align-items: center;
+    padding: 20px;
     border-radius: 3px;
+    user-select: none;
 }
 
-label.file::before {
-    content: 'Choose file';
-    position: absolute;
-    left: 10px;
-    top: 5px;
-}
