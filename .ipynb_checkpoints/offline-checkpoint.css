@@ -201,12 +201,15 @@ legend { cursor: move; }
 	transition: all 0.35s;
 }
 
+/* visibility ensures any file uploads are not interrupted (even if modal and form are not visible on screen) */
+#modal > form { visibility: hidden }
+
 .top-hide { top: -105% !important; }
 .top-show { top: 0px !important; transition: top 0.35s; }
 
 .prompt {
 	color: var(--main-color);
-	background-color: #22aa;
+	background-color: #3456;
     box-shadow: 0px 1px 3px 6px #0004;
     position: absolute;
 }
@@ -219,6 +222,7 @@ button {
 	box-shadow: 1px 1px 3px rgba(var(--r2),var(--g2),var(--b2),0.4);
 	background-color: #33c;
 	color: var(--main-color);
+    cursor: pointer;
 }
 
 input[type="file"] {
@@ -236,4 +240,8 @@ label.file {
     border-radius: 3px;
     user-select: none;
 }
+
+.hidden { visibility: hidden }
+.visible { visibility: visible !important; }
+.d-none { display: none }
 

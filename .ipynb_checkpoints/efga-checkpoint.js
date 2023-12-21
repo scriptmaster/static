@@ -1,11 +1,12 @@
-// efga.js
-function addEvent(name, cb) {
-	document.addEventListener(name, cb);
-}
-
-function qS(){return document.querySelector.apply(document, arguments)}
+// efga.js Copyright 2003-2030 M Sheriff <msheriffusa@gmail.com> All rights reserved.
+function qS(selector, el = document){return el.querySelector(selector)}
+function qSA(selector, el = document){return el.querySelectorAll(selector)}
 function cE(){return document.createElement.apply(document, arguments)}
+function addEvent(name, cb, el = document) { el.addEventListener(name, cb); }
+function removeEvent(name, cb, el = document) { el.removeEventListener(name, cb); }
+
 const q=qS;
+const UPLOAD_URI = '/upload';
 
 const draggable = {
 	el: null,
@@ -15,52 +16,21 @@ const draggable = {
 	elY: 0,
 };
 
-addEvent('pointerdown', function(ev){
-	if(ev.target.nodeName=='LEGEND') {
-		const el = draggable.el = ev.target.parentNode;
-		// ev.target.style.left = px(ev.target.parentNode.offsetLeft);
-		// ev.target.style.top = px(ev.target.parentNode.offsetTop);
-		console.log('el:', el.style.left);
-		draggable.elX = parseInt(el.style.left, 10) || 0; // ev.target.parentNode.offsetLeft;
-		draggable.elY = parseInt(el.style.top, 10) || 0; // ev.target.parentNode.offsetTop;
-		draggable.startX = ev.x;
-		draggable.startY = ev.y;
-		console.log('ev:', ev);
-		ev.preventDefault();
-	} else {
-		draggable.el = null;
-	}
-});
-
-addEvent('pointermove', function(ev) {
-	if (draggable.el) {
-		//ev.preventDefault();
-		//console.log('pointermove:', ev.offsetX, draggable.startX, draggable.el);
-		draggable.el.style.left = px(draggable.elX + (ev.x - draggable.startX))
-		draggable.el.style.top = px(draggable.elY + (ev.y - draggable.startY))
-		//console.log('draggable.el.parentNode.style.left', draggable.el.parentNode.style.left);
-	}
-})
-
-addEvent('pointerup', function(ev) {
-	draggable.el = null;
-})
+addEvent('DOMContentLoaded', main_kernel);
 
 function px(n){return parseInt(n, 10)+'px'}
 
 function create(name) {
-	// alert(name);
 	switch(name) {
 	case 'entity':
 	case 'e':
-		prompter.show((name) => {
-			s('#efga', s('div', { class: 'efga e' }, s('legend', name)));
+		prompter.show('text-prompt', (v) => {
+			s('#efga', s('div', { class: 'efga e' }, s('legend', v)));
 		})
-		// alert('create this entity');
 		break;
     case 'upload':
-        prompter.show((name) => {
-            alert(name);
+        prompter.show('upload', (filename, input) => {
+            uploadFiles(input.files);
         });
         break;
 	}
@@ -123,36 +93,91 @@ class TrustedInnerHTML {
 }
 
 const prompter = {
-	show(cb, formNumber) {
-		if (window.debug) console.log('show:', hideModal);
-		const modal = q('#modal');
-		modal.classList.add('top-show');
+	show(formNameOrNumber, cb) {
+		if (window.debug) console.log('show:', hideModal)
+		const modal = q('#modal')
+		modal.classList.add('top-show')
+		modal.classList.remove('top-hide')
+        document.forms[formNameOrNumber]?.classList?.add('visible')
 		if(cb && typeof cb == 'function') {
 			this.callback = function() {
-				cb.apply(this, arguments);
-				hideModal();
+				cb.apply(this, arguments)
+				hideModal()
 			}
 		}
-		q('#modal input').focus();
+		q('#modal input').focus()
 		function hideModal(ev) {
 			if(!ev || ev.target === modal) {
-				modal.classList.remove('top-show');
-				modal.removeEventListener('pointerdown', modalClick);
-				document.removeEventListener('keydown', modalEscape);
+				modal?.classList?.remove('top-show')
+				modal?.classList?.add('top-hide')
+				removeEvent('pointerdown', modalClick, modal)
+				removeEvent('keydown', modalEscape)
+                q('#modal form.visible')?.classList?.remove('visible')
 			}
 		}
-		const modalClick  = modal.addEventListener('pointerdown', hideModal);
-		const modalEscape = document.addEventListener('keydown', function(ev){ if(ev.key == 'Escape') hideModal(); console.log('document:keydown:', ev); });
+		const modalClick  = addEvent('pointerdown', hideModal, modal)
+		const modalEscape = addEvent('keydown', (ev) => { if(ev.key == 'Escape') hideModal() })
 	}
 	// callback = function(){}
 };
 
-function promptSubmit() {
-	if (window.debug) console.log('promptSubmit');
-	const input = q('#modal .prompt input');
+function promptSubmit(form) {
+	if (window.debug) console.log('promptSubmit', form);
+	const input = q('input', form);
 	if (window.debug) console.log(input.value);
 	if(prompter && typeof prompter.callback == 'function') {
-		prompter.callback(input.value);
+		prompter.callback(input.value, input);
 	}
-	input.value='';
+	if (input.type=='text') input.value='';
+}
+
+function uploadFiles(files) {
+    console.log('uploadFiles', files);
+    const request = new XMLHttpRequest();
+    const formData = new FormData();
+
+    request.open("POST", UPLOAD_URI, true);
+    request.onreadystatechange = () => {
+        if (request.readyState === 4 && request.status === 200) {
+          console.log(request.responseText);
+        }
+    };
+
+    for (let i = 0; i < files.length; i++) {
+        //formData.append(files[i].name, files[i])
+        formData.append('file', files[i])
+    }
+    request.send(formData);
+}
+
+function main_kernel() {
+    // .. // .. //
+    qSA('#modal form').forEach(form => addEvent('submit', (ev) => { ev.preventDefault(); promptSubmit(ev.target) }, form))
+
+    addEvent('pointerdown', function(ev){
+    	if(ev.target.nodeName.toUpperCase()=='LEGEND') {
+    		const el = draggable.el = ev.target.parentNode;
+    
+            draggable.elX = parseInt(el.style.left, 10) || 0; // ev.target.parentNode.offsetLeft;
+    		draggable.elY = parseInt(el.style.top, 10) || 0; // ev.target.parentNode.offsetTop;
+    		draggable.startX = ev.x;
+    		draggable.startY = ev.y;
+    
+            ev.preventDefault();
+    	} else {
+    		draggable.el = null;
+    	}
+    });
+    
+    addEvent('pointermove', function(ev) {
+    	if (draggable.el) {
+    		draggable.el.style.left = px(draggable.elX + (ev.x - draggable.startX))
+    		draggable.el.style.top = px(draggable.elY + (ev.y - draggable.startY))
+    	}
+    })
+    
+    addEvent('pointerup', function(ev) {
+    	draggable.el = null;
+    })
+
 }
